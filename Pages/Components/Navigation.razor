@@ -1,0 +1,33 @@
+<nav class="sticky top-0 z-50 pt-4 transition-shadow bg-white">
+    <div class="w-full px-1 mx-auto sm:px-0">
+        <NavLink href="/">
+            <img class="m-auto" src="img/names.svg" />
+            <img class="m-auto my-4" src="img/heart_line.svg" />
+        </NavLink>
+    </div>
+
+    <div class="relative">
+        <div class="flex justify-start pb-4 mx-auto overflow-x-scroll no-scrollbar menu:justify-between menu:max-w-lg menu:overflow-x-auto">
+            @foreach (var link in Links)
+            {
+                <NavLink class="mx-4 whitespace-nowrap font-nav" href="@link.Path">
+                    @link.Text[..^1]<span class="tracking-normal">@link.Text[^1]</span>
+                </NavLink>           
+            }
+            <div class="min-w-[10%] menu:hidden momentum">&nbsp;</div>
+        </div>
+        <div class="absolute top-0 bottom-0 left-0 right-0 pointer-events-none menu:hidden bg-gradient-menu"></div>
+    </div>
+</nav>
+
+@code 
+{
+    private (string Path, string Text)[] Links = new[]
+    {
+        ("/details", "DETAILS"),
+        ("/rsvp", "RSVP"),
+        ("/menu", "MENU"),
+        ("/covid", "COVID-19"),
+        ("/photos", "PHOTOS"),
+    };
+}

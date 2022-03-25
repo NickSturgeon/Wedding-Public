@@ -1,0 +1,154 @@
+@page "/rsvp"
+
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Microsoft.EntityFrameworkCore
+
+@inject IConfiguration Config
+@inject ProtectedLocalStorage ProtectedSessionStore
+@inject IDbContextFactory<WeddingContext> DbFactory
+@inject ILogger<RSVP> Logger
+
+<PageTitle>Wedding - RSVP</PageTitle>
+
+@if (_loaded)
+{
+    @if (_pastDate)
+    {
+        <div class="px-4 mx-auto my-4 max-w-prose">
+            <p class="text-center font-header">Past RSVP Date</p>
+            <p class="mt-4 text-center font-body">
+                The deadline to RSVP was @_endDate.ToString("MMMM dd, yyyy").
+                If needed, you may still reach us at <a href="mailto:@Config["ContactEmail"]">@Config["ContactEmail"]</a>
+            </p>
+        </div>       
+    }
+    else if (_invitation != null)
+    {
+        <RSVPForm Invitation="_invitation" OnLoggedOut="DeleteTokenAsync" />
+    }
+    else
+    {
+        <EditForm Model="_token" OnSubmit="StoreTokenAsync" class="mx-auto my-4 text-center">
+            <p class="px-2 font-body">Please enter the invite code included with your RSVP letter below:</p>
+            <div class="mt-6 mb-4">
+                <InputText class="code-input" autocorrect="off" autocapitalize="characters" placeholder="CODE"
+                    @bind-Value="_token.Value" @oninput="() => _showError = false" />
+                
+                @if (_showError)
+                {
+                    <p class="text-sm font-bold text-rose-500">Invalid Invitation Code</p>
+                }
+            </div>            
+            <button type="submit" class="button">Submit Invite Code</button>
+        </EditForm>
+        <p class="mt-6 text-sm italic text-center font-body">
+            Don't have your code? Please email us at 
+            <a href="mailto:@Config["ContactEmail"]">@Config["ContactEmail"]</a>
+        </p>
+    }
+}
+else
+{
+    <p class="mt-10 text-center font-body">Loading...</p>
+}
+
+@code 
+{
+    private class Token { public string? Value { get; set; } }
+    private const string TOKEN_KEY = "WEDDING_TOKEN";
+
+    private bool _loaded;   
+    private bool _showError;
+
+    private DateTime _endDate;
+    private bool _pastDate;
+
+    private Token _token = new();
+    private Invitation? _invitation;   
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _pastDate = DateTime.TryParse(Config["EndDate"], out _endDate) && _endDate.Date < DateTime.Today;
+
+            if (_pastDate)
+            {
+                await DeleteTokenAsync();
+            }
+            else {
+                var token = new ProtectedBrowserStorageResult<string>();
+                    
+                try
+                {
+                    token = await ProtectedSessionStore.GetAsync<string>(TOKEN_KEY);
+                }
+                catch (System.Security.Cryptography.CryptographicException)
+                {
+                    await DeleteTokenAsync();
+                }
+                
+                if (token.Success && !string.IsNullOrWhiteSpace(token.Value))
+                {
+                    await GetInvitationAsync(token.Value);
+                }
+                else
+                {
+                    await DeleteTokenAsync();
+                }
+            }
+
+            _loaded = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<bool> GetInvitationAsync(string code)
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        var invitation = await context.Invitations
+            .Include(x => x.Attendees)
+            .FirstOrDefaultAsync(x => x.Code == code);
+
+        if (invitation != default)
+        {
+            if (invitation.SubmissionCount == default) 
+            {
+                invitation.Attendees.ForEach(x => x.RSVP = default);
+            }
+            
+            Logger.LogInformation("Log in for code {Code} at {Date}", invitation.Code, DateTime.Now);
+            _invitation = invitation;
+            return true;
+        }
+
+        return false;
+    }
+
+    private async Task StoreTokenAsync()
+    {
+        var token = _token.Value?.Trim().ToUpperInvariant();
+        _token.Value = default;
+
+        if (string.IsNullOrEmpty(token))
+        {
+            return;
+        }
+        else if (await GetInvitationAsync(token))
+        {
+            await ProtectedSessionStore.SetAsync(TOKEN_KEY, token);
+        }
+        else
+        {
+            _showError = true;
+        }        
+    }
+
+    private async Task DeleteTokenAsync()
+    {
+        await ProtectedSessionStore.DeleteAsync(TOKEN_KEY);
+        _token.Value = default;
+        _invitation = default;
+        StateHasChanged();
+    }
+}

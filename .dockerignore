@@ -1,0 +1,9 @@
+Dockerfile
+
+[b|B]in
+[O|o]bj
+
+.git
+.gitignore
+
+node_modules

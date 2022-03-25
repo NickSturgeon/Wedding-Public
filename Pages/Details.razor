@@ -1,0 +1,87 @@
+@page "/details"
+
+@inject IConfiguration config
+
+<PageTitle>Wedding - Details</PageTitle>
+
+<div class="container px-4 mx-auto">
+    <section>
+        <p class="my-4 text-center font-header">Time&ensp;and&ensp;Place</p>
+        
+        <div class="flex flex-col items-center justify-between mx-auto max-w-prose md:flex-row">
+            <div class="flex flex-col my-4 font-display sm:flex-row md:flex-col md:mr-4">
+                <div class="flex items-stretch h-24">
+                    <div class="flex flex-col items-center justify-between pr-4">
+                        <p>[MONTH]</p>
+                        <p class="text-4xl text-center">[DAY]</p>
+                        <p>[YEAR]</p>
+                    </div>
+                    <div class="relative border-r border-black h-3/4 top-3"></div>
+                    <div class="flex flex-col justify-between pl-4">
+                        <p>[TIME]</p>
+                        <p>[ADDRESS LINE 1]</p>
+                        <p>[ADDRESS LINE 2]</p>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full h-48 my-4 sm:max-w-md md:w-80 md:ml-4">
+                <iframe
+                    class="w-full h-full bg-gray-100 rounded-md shadow-map"
+                    loading="lazy"
+                    allowfullscreen
+                    src="https://www.google.com/maps/embed?pb=[GOOGLE_MAPS_EMBED_DATA]&key=@config["GoogleMapsAPI"]">
+                </iframe>
+            </div>
+        </div>
+    </section>
+
+    <h1 class="my-4 text-center font-header">FAQ</h1>
+    <div class="grid gap-6 mx-auto md:grid-cols-2 font-body max-w-prose">
+        @foreach (var q in FAQ)
+        {
+            <div class="text-justify">
+                <h2 class="mb-1 !text-xl font-header">@q.Q</h2>
+                <p class="text-sm tracking-wide">@((MarkupString)q.A)</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code
+{
+    private (string Q, string A)[] FAQ = new[]
+    {
+        (
+            "What is the dress code? What should I wear?",
+            @"[REDACTED]"
+        ),
+        (
+            "What activities are planned after the ceremony?",
+            @"[REDACTED]"
+        ),        
+        (
+            "I'm from out of town... where can I stay?",
+            @"[REDACTED]"
+        ),
+        (
+            "What will the weather be like?",
+            @"[REDACTED]"
+        ),
+        (
+            "Will parking be available?",
+            @"[REDACTED]"
+        ),
+        (
+            "How do I RSVP?",
+            @"To RSVP, please visit <a href=""/rsvp"">this page</a>."
+        ),       
+        (
+            "What is the food and drinks situation?",
+            @"[REDACTED]"
+        ),
+        (
+            "Gifts?",
+            @"[REDACTED]"
+        ),
+    };
+}

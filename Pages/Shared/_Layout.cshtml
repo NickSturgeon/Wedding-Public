@@ -1,0 +1,32 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@namespace Wedding.Pages
+
+@addTagHelper *, WebOptimizer.Core
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="~/app.min.css" asp-append-version="true">
+    <base href="~/" />
+    <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" /> 
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /> 
+    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Comfortaa:wght@300;400&family=Montserrat:wght@300;400&family=Poiret+One&family=Quicksand:wght@300;400&family=Roboto:ital,wght@0,100;0,300;1,100;1,300&display=swap" rel="stylesheet" />
+    
+    <link rel="preload" as="image" href="img/hero.jpeg" />
+</head>
+
+<body class="bg-white">
+    <component type="typeof(Components.Navigation)" render-mode="ServerPrerendered" />
+    @RenderBody()
+    <div class="h-10"></div>
+    <script src="/_framework/blazor.server.js"></script>
+    <script src="~/app.js"></script>
+</body>
+
+</html>

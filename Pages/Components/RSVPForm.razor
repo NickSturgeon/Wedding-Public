@@ -1,0 +1,359 @@
+@using Microsoft.EntityFrameworkCore
+
+@implements IDisposable
+
+@inject IDbContextFactory<WeddingContext> DbFactory
+@inject IJSRuntime JS
+@inject Sender Mail
+@inject IConfiguration Config
+
+<div class="container px-4 mx-auto my-4 max-w-prose lg:w-2/3 xl:w-1/2">
+
+    <div class="flex justify-between">
+        @if (!_submitted)
+        {
+            <button class=" button" @onclick="SetAllRSVP">
+                RSVP All
+            </button>
+        }
+        else 
+        {
+            <div></div>
+        }
+        
+        <button class="button" @onclick="LogOut">Logout</button>
+    </div>
+
+    @if (_submitted)
+    {
+        <div 
+            class="w-48 px-2 mx-auto mt-8 mb-4 text-center text-white border rounded-md font-alert bg-emerald-500 border-emerald-600"
+            @ref="_alertSuccess" role="alert">
+            <span class="mr-1 font-bold">Success!</span>
+        </div>
+
+        <p class="my-8 text-center font-body">
+            Thank you for submitting your RSVP!
+            You are able to modify your response until 
+            @DateTime.Parse(Config["EndDate"]).ToString("MMMM dd, yyyy").
+        </p>
+
+        <a class="block mx-auto my-4 w-fit button" 
+            href="/rsvp"
+            @onclick='async () => await JS.InvokeVoidAsync("reload")'>
+            Modify RSVP
+        </a>
+    }
+    else
+    {
+        @if (Invitation.HasKids)
+        {
+            <p class="px-4 pt-8 pb-4 mx-auto text-sm text-center font-body max-w-prose">
+                Anyone 12 & under has the option to select the kids' meal (veggies and dip, chicken fingers, and cheesecake).
+                If you want to select the kids' meal or if you plan to bring your own food, 
+                please leave the meal choice as "Meat Option" and specify your choice 
+                in the "Dietary Requirements" field. Thanks!
+            </p>
+        }
+        
+        <EditForm EditContext="_context" OnValidSubmit="SaveInvitation">
+            @foreach (var attendee in Invitation.Attendees)
+            {
+                <div class="my-4">
+                    <p class="font-header required">@attendee.Name</p>
+
+                    <InputRadioGroup @bind-Value="attendee.RSVP"> 
+                        <label>
+                            <svg class="inline w-4 h-4 mr-2 stroke-black scale-125 @(attendee.RSVP == true ? "fill-black" : "fill-transparent")">
+                                <path d="M8.52826 10.5C12.4474 8.44093 14.5136 4.99278 14.4679 3.67027C15.2038 -0.328062 10.5136 2.23908 9.7903 3.02192C8.92478 3.95873 7.61054 4.53857 8.06228 6.52887C8.06228 3.89257 5.44945 1 3.06792 1C-0.587589 1 1.08672 6.80893 4.34703 8.72656C5.6643 9.50135 8.52826 10.5 8.52826 10.5Z" />
+                            </svg>                 
+                            <InputRadio class="hidden mr-2 text-black" Value="@true" />
+                            <span class="font-body">Wouldn't miss it</span>
+                        </label>
+                        <br />
+                        <label>
+                            <svg class="inline w-4 h-4 mr-2 stroke-black scale-125 @(attendee.RSVP == false ? "fill-black" : "fill-transparent")">
+                                <path d="M8.52826 10.5C12.4474 8.44093 14.5136 4.99278 14.4679 3.67027C15.2038 -0.328062 10.5136 2.23908 9.7903 3.02192C8.92478 3.95873 7.61054 4.53857 8.06228 6.52887C8.06228 3.89257 5.44945 1 3.06792 1C-0.587589 1 1.08672 6.80893 4.34703 8.72656C5.6643 9.50135 8.52826 10.5 8.52826 10.5Z" />
+                            </svg>
+                            <InputRadio class="hidden mr-2 text-black" 
+                                @onclick="() => HandleNotGoing(attendee)" Value="@false" />
+                            <span class="font-body">Can't make it</span>
+                        </label>
+                    </InputRadioGroup>
+                    <ValidationMessage class="mt-2" For="@(() => attendee.RSVP!)" />
+
+                    @if (attendee.RSVP.GetValueOrDefault())
+                    {
+                        <p class="mt-2 font-header !text-xl required">Meal Choice</p>
+                        <InputRadioGroup @bind-Value="attendee.VegetarianOption"> 
+                            <label>
+                                <svg class="inline w-4 h-4 mr-2 stroke-black scale-125 @(attendee.VegetarianOption ? "fill-transparent" : "fill-black")">
+                                    <path d="M8.52826 10.5C12.4474 8.44093 14.5136 4.99278 14.4679 3.67027C15.2038 -0.328062 10.5136 2.23908 9.7903 3.02192C8.92478 3.95873 7.61054 4.53857 8.06228 6.52887C8.06228 3.89257 5.44945 1 3.06792 1C-0.587589 1 1.08672 6.80893 4.34703 8.72656C5.6643 9.50135 8.52826 10.5 8.52826 10.5Z" />
+                                </svg>                 
+                                <InputRadio class="hidden mr-2 text-black" Value="@false" />
+                                <span class="font-body">Meat Option</span>
+                            </label>
+                            <br />
+                            <label>
+                                <svg class="inline w-4 h-4 mr-2 stroke-black scale-125 @(attendee.VegetarianOption ? "fill-black" : "fill-transparent")">
+                                    <path d="M8.52826 10.5C12.4474 8.44093 14.5136 4.99278 14.4679 3.67027C15.2038 -0.328062 10.5136 2.23908 9.7903 3.02192C8.92478 3.95873 7.61054 4.53857 8.06228 6.52887C8.06228 3.89257 5.44945 1 3.06792 1C-0.587589 1 1.08672 6.80893 4.34703 8.72656C5.6643 9.50135 8.52826 10.5 8.52826 10.5Z" />
+                                </svg>
+                                <InputRadio class="hidden mr-2 text-black" Value="@true" />
+                                <span class="font-body">Vegetarian Option</span>
+                            </label>
+                        </InputRadioGroup>
+
+                        <label>
+                            <div class="flex flex-col mt-2 md:flex-row">
+                                <span class="mr-2 font-light">Dietary Requirements</span>
+                                <InputText
+                                    class="flex-grow inline px-2 bg-gray-100 border border-gray-300 rounded-md focus:border-gray-500 focus:bg-white focus:ring-0" 
+                                    disabled="@(!attendee.RSVP.GetValueOrDefault())" 
+                                    @bind-Value="attendee.DietaryRestrictions" />
+                            </div>
+                        </label>
+                    }
+                </div>
+                
+                <hr class="my-4" />
+            }
+
+            <p class="font-header">General Information</p>
+
+            <label>
+                <div class="mt-2 font-light">General Comments</div>
+                <InputTextArea
+                    class="block w-full bg-gray-100 border-gray-300 rounded-md focus:border-gray-500 focus:bg-white focus:ring-0"
+                    @ref="_commentBox"
+                    placeholder="Best wishes, questions, song requests, etc."
+                    @bind-Value="Invitation.GeneralComments" />
+            </label>
+
+            @if (Invitation.Attendees.Any(x => x.RSVP.GetValueOrDefault()))
+            {
+                <div>
+                    <label>
+                        <div class="mt-4">
+                            <p class="font-light">Accomodations</p>
+                            <div class="flex flex-wrap">
+                                <svg class="mt-2 ml-1 w-7 h-4 stroke-black scale-125 @(Invitation.AccomodationsNeeded ? "fill-black" : "fill-transparent")">
+                                    <path d="M8.52826 10.5C12.4474 8.44093 14.5136 4.99278 14.4679 3.67027C15.2038 -0.328062 10.5136 2.23908 9.7903 3.02192C8.92478 3.95873 7.61054 4.53857 8.06228 6.52887C8.06228 3.89257 5.44945 1 3.06792 1C-0.587589 1 1.08672 6.80893 4.34703 8.72656C5.6643 9.50135 8.52826 10.5 8.52826 10.5Z" />
+                                </svg>
+                                <p class="w-10/12 font-body">
+                                    I will require accomodations (we will contact you for further information)
+                                </p>
+                            </div>
+                            <InputCheckbox
+                                class="hidden"
+                                @bind-Value="Invitation.AccomodationsNeeded" />
+                        </div>
+                    </label>
+
+                    <label>
+                        <div class="mt-2 font-light required">Contact Email</div>
+                        <InputText 
+                            type="email"
+                            aria-required="true"
+                            class="inline-block w-full max-w-sm px-2 bg-gray-100 border-gray-300 rounded-md focus:border-gray-500 focus:bg-white focus:ring-0"
+                            @bind-Value="Invitation.Email" />
+                    </label>
+                    <ValidationMessage For="@(() => Invitation.Email)" />
+                    
+                    <label>
+                        <div class="mt-4">
+                            <p class="font-light required">COVID-19 Vaccination Agreement</p>
+                            <div class="flex flex-wrap">
+                                <svg class="mt-2 ml-1 w-7 h-4 stroke-black scale-125 @(Invitation.CovidAgreement ? "fill-black" : "fill-transparent")">
+                                    <path d="M8.52826 10.5C12.4474 8.44093 14.5136 4.99278 14.4679 3.67027C15.2038 -0.328062 10.5136 2.23908 9.7903 3.02192C8.92478 3.95873 7.61054 4.53857 8.06228 6.52887C8.06228 3.89257 5.44945 1 3.06792 1C-0.587589 1 1.08672 6.80893 4.34703 8.72656C5.6643 9.50135 8.52826 10.5 8.52826 10.5Z" />
+                                </svg>
+                                <p class="w-10/12 font-body">
+                                    By submitting this RSVP, I confirm that all those in my party are fully vaccinated
+                                </p>
+                            </div>
+                            <InputCheckbox
+                                class="hidden"
+                                @bind-Value="Invitation.CovidAgreement"
+                                DisplayName="COVID-19 Vaccination Agreement" />        
+                        </div>
+                    </label>
+                    <ValidationMessage For="@(() => Invitation.CovidAgreement)" />
+                </div>
+            }
+
+            <br />
+
+            <p class="text-sm"><span class="text-rose-500">*</span> Required</p>
+            <div class="mb-2 text-sm text-rose-500">
+                
+            </div>  
+            
+            <div class="flex items-center justify-between">
+                <button class="button" type="submit">@(Invitation.LastUpdated == null ? "Submit" : "Update")</button>
+                
+                <div class="relative w-2/4 h-8">
+                    <div 
+                        class="absolute top-0 bottom-0 left-0 right-0 px-2 pt-1 text-center text-white transition-opacity duration-200 ease-in-out border rounded-md font-alert bg-emerald-500 border-emerald-600"
+                        @ref="_alertSuccess" role="alert" style="opacity: 0">
+                        <span class="mr-1 font-bold">Success!</span>
+                    </div>
+                    <div 
+                        class="absolute top-0 bottom-0 left-0 right-0 px-2 pt-1 text-center text-white transition-opacity duration-200 ease-in-out border rounded-md font-alert bg-rose-500 border-rose-600"
+                        @ref="_alertError" role="alert" style="opacity: 0">
+                        <span class="mr-1 font-bold">Error!</span>
+                    </div>
+                </div>            
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code 
+{
+    [Parameter, EditorRequired]
+    public Invitation Invitation { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback OnLoggedOut { get; set; }
+
+    private EditContext? _context;
+    private ValidationMessageStore? _errors;
+    private bool _validationRequested;
+
+    private bool _submitted = false;
+
+    private InputTextArea? _commentBox;
+
+    private ElementReference _alertSuccess;
+    private ElementReference _alertError;
+    private readonly TimeSpan _alertDelay = TimeSpan.FromSeconds(2);
+
+    private async Task LogOut() => await OnLoggedOut.InvokeAsync();
+
+    protected override void OnInitialized()
+    {
+        _context = new(Invitation);
+        _context.EnableDataAnnotationsValidation();  
+        _context.OnFieldChanged += HandleFieldChange;    
+        _context.OnValidationRequested += HandleValidation;
+
+        _errors = new(_context);
+    }   
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) 
+        {
+            await JS.InvokeVoidAsync("resetScroll");
+            await JS.InvokeVoidAsync("autoSetHeight", _commentBox?.Element);
+        }
+    }
+
+    private async Task SaveInvitation()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();        
+        
+        Invitation.SubmissionCount++;
+        Invitation.Attendees.ForEach(x => x.DietaryRestrictions = x.DietaryRestrictions?.Trim());
+        Invitation.LastUpdated = DateTime.Now;
+
+        if (string.IsNullOrWhiteSpace(Invitation.GeneralComments))
+        {
+            Invitation.GeneralComments = null;
+        }
+
+        context.Update(Invitation);
+        
+        try
+        {
+            await context.SaveChangesAsync();
+            _validationRequested = false;
+            _submitted = true;   
+            StateHasChanged();  
+
+            // Fire-and-forget email sending
+            #pragma warning disable 4014     
+            Task.Run(async () => await Mail.SendMessage(Invitation)).ConfigureAwait(false);
+            #pragma warning restore 4014
+        }
+        catch (Exception e) when (e is DbUpdateException || e is DbUpdateConcurrencyException)
+        {
+            _submitted = false;
+            await PopupAlert(_alertError);
+        }
+    }
+
+    private async Task PopupAlert(ElementReference element)
+    {
+        await JS.InvokeVoidAsync("showAfterDelay", element, TimeSpan.Zero.TotalMilliseconds);
+        await JS.InvokeVoidAsync("hideAfterDelay", element, _alertDelay.TotalMilliseconds);
+    }
+
+    private void SetAllRSVP()
+    {
+        Invitation.Attendees.ForEach(x => x.RSVP = true);
+        if (_validationRequested)
+        {
+            _context?.Validate();
+        }
+    }
+
+    private void HandleFieldChange(object? sender, FieldChangedEventArgs e)
+    {
+        if (_validationRequested)
+        {
+            _context?.Validate();
+        }
+    }
+
+    private void HandleValidation(object? sender, ValidationRequestedEventArgs args)
+    {
+        _errors?.Clear();       
+        _validationRequested = true;
+        
+        foreach (var attendee in Invitation.Attendees.Where(x => x.RSVP is null))
+        {
+            _errors?.Add(() => attendee.RSVP!, $"Please specify if {attendee.Name} will be attending.");
+        }
+
+        if (Invitation.Attendees.Any(x => x.RSVP.GetValueOrDefault()))
+        {
+            if (string.IsNullOrWhiteSpace(Invitation.Email))
+            {
+                _errors?.Add(() => Invitation.Email!, "Please provide an e-mail so we may contact you with future info.");
+            }
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(Invitation.Email, @"^\S+@\S+$"))
+            {
+                _errors?.Add(() => Invitation.Email!, "Please enter a valid e-mail address.");
+            }
+
+            if (!Invitation.CovidAgreement)
+            {
+                _errors?.Add(() => Invitation.CovidAgreement, "You must agree to the COVID-19 Vaccination Agreement.");
+            }
+        }
+    }
+
+    private void HandleNotGoing(Attendee attendee)
+    {
+        attendee.RSVP = false;
+        attendee.VegetarianOption = false;
+        attendee.DietaryRestrictions = null;
+        
+        // Handle nobody going
+        if (Invitation.Attendees.All(x => !x.RSVP.GetValueOrDefault()))
+        {
+            Invitation.Email = null;
+            Invitation.CovidAgreement = false;
+            Invitation.AccomodationsNeeded = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_context is not null)
+        {
+            _context.OnFieldChanged -= HandleFieldChange;
+            _context.OnValidationRequested -= HandleValidation;
+        }
+    }
+}

@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mayeka Font */
+@font-face {
+  font-family: Mayeka;
+  src: url("/font/mayeka/regular.woff2") format("woff2"),
+       url("/font/mayeka/regular.woff") format("woff");
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: Mayeka;
+  src: url("/font/mayeka/light.woff2") format("woff2"),
+       url("/font/mayeka/light.woff") format("woff");
+  font-weight: 200;
+}
+
+@font-face {
+  font-family: Mayeka;
+  src: url("/font/mayeka/semibold.woff2") format("woff2"),
+       url("/font/mayeka/semibold.woff") format("woff");
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: Mayeka;
+  src: url("/font/mayeka/bold.woff2") format("woff2"),
+       url("/font/mayeka/bold.woff") format("woff");
+  font-weight: 700;
+}
+
+/* Amatica Font */
+@font-face {
+  font-family: Amatica;
+  src: url("/font/amatica/regular.woff2") format("woff2"),
+       url("/font/amatica/regular.woff") format("woff");
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: Amatica;
+  src: url("/font/amatica/bold.woff2") format("woff2"),
+       url("/font/amatica/bold.woff") format("woff");
+  font-weight: 700;
+}
+
+/* Dynamic Styles */
+a.active {
+  @apply border-b border-black;
+}
+
+.font-body a {
+  @apply underline text-sky-700;
+}
+
+.invalid {
+  @apply border-rose-500;
+}
+
+.validation-message {
+  @apply text-xs text-rose-500 mt-2;
+}
+
+.nav-active {
+  @apply shadow;
+}
+
+textarea::placeholder {
+  @apply font-light text-gray-400;
+}
+
+/* Additional Styles */
+@layer base {
+  .h-screen-nav {
+    height: calc(theme('height.screen') - theme('height.24') + 3 * theme('height.px'));
+  }
+}
+
+.required::after {
+  content: ' *';
+  @apply text-rose-500 !font-normal font-sans text-base;
+}
+
+@layer components {
+  .code-input {
+    @apply w-64 h-16 px-4 border font-mono text-4xl text-center uppercase bg-gray-100 border-gray-300 rounded-md focus:border-gray-500 focus:bg-white focus:ring-0 placeholder:text-gray-300;
+  }
+
+  .button {
+    @apply bg-gray-100 font-button py-1 px-8 border-gray-300 rounded-md border hover:bg-white hover:border-gray-500;
+  }
+}
+
+@layer utilities {
+  .momentum {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bg-gradient-menu {
+    background: linear-gradient(to right, rgba(255,255,255,0), 95%, white)
+  }
+
+  .font-mayeka {
+    font-family: Mayeka, sans-serif;
+  }
+
+  .font-amatica {
+    font-family: 'Amatic SC', sans-serif;
+    @apply text-2xl tracking-widest;
+  }
+
+  .font-montserrat {
+    font-family: Montserrat, sans-serif;
+  }
+
+  .font-header {
+    @apply font-amatica font-normal text-lg;
+  }
+
+  .font-display {
+    @apply font-montserrat font-light;
+  }
+
+  .font-body {
+    @apply font-montserrat font-light;
+  }
+
+  .font-nav {
+    @apply font-amatica;
+  }
+
+  .font-button {
+    @apply font-mayeka font-normal;
+  }
+
+  .font-alert {
+    @apply font-mayeka font-normal;
+  }
+}

@@ -1,0 +1,14 @@
+version: "3.3"
+services:
+  wedding:
+    container_name: wedding   
+    network_mode: host 
+    build: .
+    restart: unless-stopped  
+    environment:
+      XDG_DATA_HOME: /data
+    ports:
+      - 5555:5555
+    volumes:
+      - ./config:/data
+      - ./keys:/root/.aspnet/DataProtection-Keys

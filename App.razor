@@ -1,0 +1,14 @@
+﻿<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not Found</PageTitle>
+        <LayoutView>
+            <div class="mx-auto my-4 w-fit font-body">
+                <p role="alert">Sorry, the requested page could not be found.</p>
+                <a class="my-2" href="/">Return Home</a>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>

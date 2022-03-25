@@ -1,0 +1,49 @@
+@page "/covid"
+
+@using Microsoft.EntityFrameworkCore
+
+@inject IDbContextFactory<WeddingContext> DbFactory
+
+<PageTitle>Wedding - COVID-19</PageTitle>
+
+<p class="my-4 text-center font-header">COVID-19 Info</p>
+
+<p class="px-4 pb-8 mx-auto text-sm tracking-wide text-center font-body">
+    As you can imagine, planning a wedding during the pandemic has been a challenge. 
+    There have been and continue to be a lot of unknowns. 
+    <br/>
+    Please check back here for updates on restrictions that may impact the wedding.
+</p>
+
+<div class="px-4 mx-auto font-body max-w-prose">
+    @if (_updates.Any())
+    {
+        @foreach (var update in _updates)
+        {
+            <div class="my-4">
+                <p class="font-header">@update.Date.ToString("MMMM dd, yyyy")</p>
+                <p>@((MarkupString)update.Message)</p>
+            </div>
+            
+            @if (update != _updates.Last())
+            {
+                <hr />
+            }
+        }
+    }
+    else 
+    {
+        <p class="text-sm italic text-center font-body">No updates at this time</p>
+    }
+</div>
+
+@code
+{
+    private List<CovidUpdate> _updates = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync(); 
+        _updates = context.CovidUpdates.OrderByDescending(x => x.Date).ToList();
+    }
+}
